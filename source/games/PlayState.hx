@@ -2203,6 +2203,47 @@ class PlayState extends MusicBeatState
 			}
 		}
 	}
+	
+#if android
+private function liberarOponenteAnterior(personaje:Character):Void
+{
+    if (personaje == null || personaje == dad)
+        return;
+
+    // Comprobar si el personaje volvera a aparecer.
+    for (evento in eventNotes)
+    {
+        if (evento.event != "Change Character"
+            || evento.value2 != personaje.curCharacter)
+            continue;
+
+        var tipo:String = evento.value1 == null
+            ? ""
+            : evento.value1.toLowerCase().trim();
+
+        if (tipo == "dad" || tipo == "opponent" || tipo == "1")
+            return;
+    }
+
+    // Retirar la referencia del mapa.
+    if (dadMap.get(personaje.curCharacter) == personaje)
+        dadMap.remove(personaje.curCharacter);
+
+    // Retirar el personaje de la escena.
+    dadGroup.remove(personaje, true);
+
+    // Permitir que se libere la textura sin usos.
+    var textura = personaje.graphic;
+    if (textura != null)
+    {
+        textura.persist = false;
+        textura.destroyOnNoUse = true;
+    }
+
+    // Destruir la instancia anterior.
+    personaje.destroy();
+}
+#end
 
 	private function parkCharacter(char:Character):Void
 	{
@@ -3267,8 +3308,16 @@ class PlayState extends MusicBeatState
 							dad.alpha = lastAlpha;
 							iconP2.changeIcon(dad.healthIcon);
 
-							if (oldDad != null && oldDad != dad)
-								parkCharacter(oldDad);
+							
+						if (oldDad != null && oldDad != dad)
+						{
+   				 parkCharacter(oldDad);
+
+  						  #if android
+   					 liberarOponenteAnterior(oldDad);
+   							 #end
+							}
+
 						}
 						setOnScripts('dadName', dad.curCharacter);
 
